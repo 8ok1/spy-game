@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spy Question Game</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+    }
+
+    .card {
+      background: white;
+      width: 90%;
+      max-width: 420px;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+    }
+
+    input {
+      width: 93%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      margin-top: 12px;
+      cursor: pointer;
+      background: #667eea;
+      color: white;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background: #5a67d8;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .secondary {
+      background: #e2e8f0;
+      color: #333;
+    }
+
+    .secondary:hover {
+      background: #cbd5e1;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      text-align: left;
+      margin-top: 15px;
+    }
+
+    li {
+      background: #f1f5f9;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .spy {
+      font-weight: bold;
+      margin-top: 15px;
+      color: #e11d48;
+    }
+
+    .note {
+      font-size: 14px;
+      color: #666;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <h1>🕵️ Spy Game</h1>
+
+  <!-- SETUP -->
+  <div id="setup">
+    <p>Enter player names</p>
+    <input id="namesInput" placeholder="Alex, Sam, Jamie">
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game" class="hidden">
+    <h2 id="playerName"></h2>
+
+    <p id="question" class="hidden"></p>
+
+    <input id="answerInput" class="hidden" placeholder="Type your answer">
+
+    <button id="revealBtn" onclick="revealQuestion()">Reveal Question</button>
+    <button id="nextBtn" class="hidden" onclick="saveAndNext()">Next Player</button>
+
+    <p class="note">Pass the phone to the next player</p>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="end" class="hidden">
+    <h2>All Answers</h2>
+    <ul id="answersList"></ul>
+
+    <button class="secondary" onclick="revealSpy()">Reveal Spy</button>
+    <p id="spyReveal" class="spy hidden"></p>
+
+    <button onclick="nextRound()">Next Round</button>
+  </div>
+
+</div>
+
+<script>
+  let players = [];
+  let spyIndex = 0;
+  let currentIndex = 0;
+  let answers = [];
+  let currentSet;
+
+  const questionSets = [
+    { normal: "What is your favorite food?", spy: "What is your favorite color?" },
+    { normal: "What do you usually do on weekends?", spy: "What do you usually do on holidays?" },
+    { normal: "What is your favorite school subject?", spy: "What is your favorite hobby?" },
+    { normal: "What is your dream job?", spy: "What is your dream vacation?" },
+    { normal: "What app do you use the most?", spy: "What website do you visit the most?" },
+    { normal: "What is your favorite movie?", spy: "What is your favorite TV show?" },
+    { normal: "What time do you usually wake up?", spy: "What time do you usually go to sleep?" },
+    { normal: "What game do you play the most?", spy: "What sport do you like the most?" },
+    { normal: "What snack do you eat the most?", spy: "What drink do you have the most?" },
+    { normal: "What is something you’re really good at?", spy: "What is something you want to be better at?" }
+  ];
+
+  function startGame() {
+    players = namesInput.value.split(",").map(n => n.trim()).filter(Boolean);
+    if (players.length < 3) return alert("At least 3 players needed!");
+
+    startRound();
+    setup.classList.add("hidden");
+    game.classList.remove("hidden");
+  }
+
+  function startRound() {
+    spyIndex = Math.floor(Math.random() * players.length);
+    answers = new Array(players.length);
+    currentIndex = 0;
+    currentSet = questionSets[Math.floor(Math.random() * questionSets.length)];
+
+    end.classList.add("hidden");
+    spyReveal.classList.add("hidden");
+    game.classList.remove("hidden");
+    showPlayer();
+  }
+
+  function showPlayer() {
+    playerName.textContent = `Player: ${players[currentIndex]}`;
+    question.classList.add("hidden");
+    answerInput.classList.add("hidden");
+    answerInput.value = "";
+    revealBtn.classList.remove("hidden");
+    nextBtn.classList.add("hidden");
+  }
+
+  function revealQuestion() {
+    question.textContent = currentIndex === spyIndex ? currentSet.spy : currentSet.normal;
+    question.classList.remove("hidden");
+    answerInput.classList.remove("hidden");
+    revealBtn.classList.add("hidden");
+    nextBtn.classList.remove("hidden");
+  }
+
+  function saveAndNext() {
+    answers[currentIndex] = answerInput.value || "(no answer)";
+    currentIndex++;
+    currentIndex >= players.length ? showResults() : showPlayer();
+  }
+
+  function showResults() {
+    game.classList.add("hidden");
+    end.classList.remove("hidden");
+    answersList.innerHTML = "";
+    players.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.textContent = `${p}: ${answers[i]}`;
+      answersList.appendChild(li);
+    });
+  }
+
+  function revealSpy() {
+    spyReveal.textContent = `🕵️ The spy was ${players[spyIndex]}`;
+    spyReveal.classList.remove("hidden");
+  }
+
+  function nextRound() {
+    startRound();
+  }
+</script>
+
+</body>
+</html>
